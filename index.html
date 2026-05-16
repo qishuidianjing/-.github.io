@@ -43,6 +43,8 @@ input{width:100%;padding:11px;margin-top:6px;border:none;border-radius:8px;font-
 .btn-group button{flex:1;padding:10px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;}
 .save-btn{background:#22c55e;color:#fff;}
 .close-btn{background:#ef4444;color:#fff;}
+.loading{color:#fbbf24;text-align:center;margin:10px 0;}
+.error{color:#ef4444;text-align:center;margin:10px 0;}
 </style>
 </head>
 <body>
@@ -176,8 +178,14 @@ function parseTencentCSV(text) {
 }
 
 async function loadTencentConfig() {
+  const resultDiv = document.getElementById("result");
+  resultDiv.innerHTML = '<div class="loading">正在拉取最新价格...</div>';
+
+  // 加随机时间戳，强制不缓存
+  const timestamp = new Date().getTime();
+  const csvUrl = TENCENT_DOC_URL.replace("?tab=BB08J2","/export?format=csv&sheet=priceData") + "&_t=" + timestamp;
+
   try {
-    const csvUrl = TENCENT_DOC_URL.replace("?tab=BB08J2","/export?format=csv&sheet=priceData");
     const res = await fetch(csvUrl);
     if(!res.ok)throw new Error("获取失败");
     const text = await res.text();
@@ -189,7 +197,9 @@ async function loadTencentConfig() {
     discountConfig = data.discountConfig;
 
     initRankSelect();
+    resultDiv.innerHTML = "✅ 价格已更新（来自腾讯文档）";
   } catch (e) {
+    resultDiv.innerHTML = '<div class="error">❌ 读取腾讯文档失败：' + e.message + '</div>';
     initRankSelect();
   }
 }
@@ -309,7 +319,12 @@ function saveAllPrices(){
 function openAdminPanel(){document.getElementById("adminPanel").classList.add("active");renderAll();}
 function closeAdminPanel(){document.getElementById("adminPanel").classList.remove("active");}
 
-window.onload = loadTencentConfig;
+// 页面加载时拉取最新价格
+window.onload = function(){
+  loadTencentConfig();
+  // 每5分钟自动刷新一次价格
+  setInterval(loadTencentConfig, 5 * 60 * 1000);
+};
 </script>
 </body>
 </html>
