@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>年糕工作室 - 报价计算器</title>
+<style>
+body{margin:0;background:#111827;color:#fff;font-family:Arial;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:10px 0;}
+.box{width:92%;max-width:420px;background:#1f2937;padding:20px;border-radius:16px;}
+h1{text-align:center;color:#fbbf24;font-size:20px;margin:0 0 15px;}
+.order-type{display:flex;gap:6px;margin-bottom:15px;border-radius:8px;overflow:hidden;}
+.order-type button{flex:1;padding:10px;border:none;background:#374151;color:#fff;font-weight:bold;font-size:14px;min-width:80px;}
+.order-type button.active{background:#fbbf24;color:#111827;}
+.panel{display:none;padding:10px 0;}
+.panel.active{display:block;}
+label{margin-top:12px;display:block;font-size:14px;}
+input{width:100%;padding:11px;margin-top:6px;border:none;border-radius:8px;font-size:16px;box-sizing:border-box;background:#fff;color:#111827;}
+.rank-select-wrap{display:flex;gap:6px;margin-top:6px;}
+.rank-select-wrap select,.rank-select-wrap input{flex:1;padding:11px;border:none;border-radius:8px;font-size:15px;background:#fff;color:#111827;}
+.rank-select-wrap input{text-align:center;}
+.hidden{display:none !important;}
+.extra-wrap{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap;}
+.extra-wrap label{margin:0;display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer;}
+.extra-wrap input{width:auto;margin:0;}
+.calc-btn{width:100%;padding:13px;margin-top:20px;border:none;border-radius:10px;background:#fbbf24;font-size:17px;font-weight:bold;cursor:pointer;}
+.result{margin-top:15px;background:#373751;padding:15px;border-radius:10px;line-height:1.8;font-size:15px;}
+.price{font-size:26px;color:#22c55e;font-weight:bold;}
+.discount{color:#fbbf24;font-weight:bold;}
+.open-admin-btn{position:fixed;bottom:15px;right:15px;padding:8px 12px;background:#fbbf24;color:#111827;border:none;border-radius:8px;font-weight:bold;cursor:pointer;z-index:998;}
+#adminPanel{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;justify-content:center;align-items:center;z-index:999;}
+#adminPanel.active{display:flex;}
+.admin-box{background:#1f2937;padding:20px;border-radius:16px;width:95%;max-width:600px;max-height:90vh;overflow-y:auto;}
+.admin-box h2{color:#fbbf24;text-align:center;margin:0 0 10px;}
+.admin-tabs{display:flex;gap:6px;margin-bottom:15px;border-radius:8px;overflow:hidden;flex-wrap:wrap;}
+.admin-tabs button{flex:1;padding:10px;border:none;background:#374151;color:#fff;font-weight:bold;font-size:14px;min-width:90px;}
+.admin-tabs button.active{background:#fbbf24;color:#111827;}
+.admin-panel{display:none;}
+.admin-panel.active{display:block;}
+.price-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.price-row label{flex:2;margin:0;font-size:13px;}
+.price-row input{flex:1;margin:0;padding:6px 8px;}
+.btn-group{display:flex;gap:10px;margin-top:15px;}
+.btn-group button{flex:1;padding:10px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;}
+.save-btn{background:#22c55e;color:#fff;}
+.close-btn{background:#ef4444;color:#fff;}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>年糕工作室</h1>
+  <div class="order-type">
+    <button class="type-btn active" onclick="switchType('rank')">排位赛</button>
+    <button class="type-btn" onclick="switchType('peak')">巅峰赛</button>
+    <button class="type-btn" onclick="switchType('power')">荣耀战力</button>
+  </div>
+
+  <div class="panel active" id="rankPanel">
+    <label>当前段位</label>
+    <div class="rank-select-wrap">
+      <select id="curBigRank" onchange="updateCurSmallRank()"></select>
+      <select id="curSmallRank"></select>
+      <select id="curStarSelect"></select>
+      <input type="number" id="curStarInput" class="hidden" value="0" min="0" max="160">
+    </div>
+    <label>目标段位</label>
+    <div class="rank-select-wrap">
+      <select id="tarBigRank" onchange="updateTarSmallRank()"></select>
+      <select id="tarSmallRank"></select>
+      <select id="tarStarSelect"></select>
+      <input type="number" id="tarStarInput" class="hidden" value="1" min="1" max="160">
+    </div>
+  </div>
+
+  <div class="panel" id="peakPanel">
+    <label>当前巅峰分</label>
+    <input type="number" id="peakNow" value="1200" min="1200" max="2300">
+    <label>目标巅峰分</label>
+    <input type="number" id="peakTar" value="1800" min="1200" max="2300">
+  </div>
+
+  <div class="panel" id="powerPanel">
+    <label>当前战力</label>
+    <input type="number" id="powerNow" value="1000" min="0" max=15000>
+    <label>目标战力</label>
+    <input type="number" id="powerTar" value="3000" min="0" max=15000>
+  </div>
+
+  <div class="extra-wrap">
+    <label><input type="radio" name="extra" value="none" checked> 无额外</label>
+    <label><input type="radio" name="extra" value="road"> 指定分路+20%</label>
+    <label><input type="radio" name="extra" value="hero"> 指定英雄+30%</label>
+  </div>
+
+  <button class="calc-btn" onclick="calculatePrice()">立即报价</button>
+  <div class="result" id="result">请选择后点击报价</div>
+</div>
+
+<button class="open-admin-btn" onclick="openAdminPanel()">设置价格</button>
+
+<div id="adminPanel">
+  <div class="admin-box">
+    <h2>价格设置</h2>
+    <div class="admin-tabs">
+      <button class="admin-tab-btn active" onclick="switchAdminTab('rank')">排位赛</button>
+      <button class="admin-tab-btn" onclick="switchAdminTab('peak')">巅峰赛</button>
+      <button class="admin-tab-btn" onclick="switchAdminTab('power')">荣耀战力</button>
+      <button class="admin-tab-btn" onclick="switchAdminTab('discount')">满减设置</button>
+    </div>
+    <div class="admin-panel active" id="adminRank"></div>
+    <div class="admin-panel" id="adminPeak"></div>
+    <div class="admin-panel" id="adminPower"></div>
+    <div class="admin-panel" id="adminDiscount"></div>
+    <div class="btn-group">
+      <button class="save-btn" onclick="saveAllPrices()">保存并生效</button>
+      <button class="close-btn" onclick="closeAdminPanel()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const rankData = {
+  "青铜":{small:["青铜3","青铜2","青铜1"],stars:[0,1,2,3]},
+  "白银":{small:["白银3","白银2","白银1"],stars:[0,1,2,3]},
+  "黄金":{small:["黄金4","黄金3","黄金2","黄金1"],stars:[0,1,2,3,4]},
+  "铂金":{small:["铂金4","铂金3","铂金2","铂金1"],stars:[0,1,2,3,4]},
+  "钻石":{small:["钻石5","钻石4","钻石3","钻石2","钻石1"],stars:[0,1,2,3,4,5]},
+  "星耀":{small:["星耀5","星耀4","星耀3","星耀2","星耀1"],stars:[0,1,2,3,4,5]},
+  "最强王者":{small:["最强王者"],stars:[]}
+};
+const rankWeight = {
+  "青铜3":0,"青铜2":3,"青铜1":6,"白银3":9,"白银2":12,"白银1":15,
+  "黄金4":18,"黄金3":22,"黄金2":26,"黄金1":30,"铂金4":34,"铂金3":38,"铂金2":42,"铂金1":46,
+  "钻石5":50,"钻石4":55,"钻石3":60,"钻石2":65,"钻石1":70,"星耀5":75,"星耀4":80,"星耀3":85,"星耀2":90,"星耀1":95,"最强王者":100
+};
+
+let defaultRankPriceConfig = [
+  {name:"青铜3→青铜2",start:0,end:3,price:3},{name:"青铜2→青铜1",start:3,end:6,price:3},{name:"青铜1→白银3",start:6,end:9,price:3},
+  {name:"白银3→白银2",start:9,end:12,price:3},{name:"白银2→白银1",start:12,end:15,price:3},{name:"白银1→黄金4",start:15,end:18,price:3},
+  {name:"黄金4→黄金3",start:18,end:22,price:6},{name:"黄金3→黄金2",start:22,end:26,price:6},{name:"黄金2→黄金1",start:26,end:30,price:6},
+  {name:"黄金1→铂金4",start:30,end:34,price:6},{name:"铂金4→铂金3",start:34,end:38,price:7},{name:"铂金3→铂金2",start:38,end:42,price:7},
+  {name:"铂金2→铂金1",start:42,end:46,price:7},{name:"铂金1→钻石5",start:46,end:50,price:7},{name:"钻石5→钻石4",start:50,end:55,price:7},
+  {name:"钻石4→钻石3",start:55,end:60,price:7},{name:"钻石3→钻石2",start:60,end:65,price:7},{name:"钻石2→钻石1",start:65,end:70,price:7},
+  {name:"钻石1→星耀5",start:70,end:75,price:7},{name:"星耀5→星耀4",start:75,end:80,price:7},{name:"星耀4→星耀3",start:80,end:85,price:7},
+  {name:"星耀3→星耀2",start:85,end:90,price:8},{name:"星耀2→星耀1",start:90,end:95,price:8},{name:"星耀1→王者1星",start:95,end:100,price:9},
+  {name:"王者1-10星",start:100,end:110,price:2},{name:"王者10-20星",start:110,end:120,price:2.5},{name:"王者20-30星",start:120,end:130,price:3},
+  {name:"王者30-40星",start:130,end:140,price:3.5},{name:"王者40-50星",start:140,end:150,price:4},{name:"王者50-60星",start:150,end:160,price:5},
+  {name:"王者60-70星",start:160,end:170,price:7},{name:"王者70-80星",start:170,end:180,price:8},{name:"王者80-90星",start:180,end:190,price:9},
+  {name:"王者90-100星",start:190,end:200,price:12},{name:"王者100-110星",start:200,end:210,price:15},{name:"王者110-120星",start:210,end:220,price:18},
+  {name:"王者120-130星",start:220,end:230,price:21},{name:"王者130-140星",start:230,end:240,price:24},{name:"王者140-150星",start:240,end:250,price:27},
+  {name:"王者150-160星",start:250,end:260,price:30}
+];
+let defaultPeakPriceConfig = [
+  {min:1200,max:1300,price:0.10},{min:1300,max:1400,price:0.15},{min:1400,max:1500,price:0.20},
+  {min:1500,max:1600,price:0.25},{min:1600,max:1700,price:0.30},{min:1700,max:1800,price:0.40},
+  {min:1800,max:1900,price:0.55},{min:1900,max:2000,price:0.70},{min:2000,max:2100,price:0.90},
+  {min:2100,max:2200,price:1.10},{min:2200,max:2300,price:1.30}
+];
+let defaultPowerPriceConfig = [
+  {min:0,max:1000,price:0.010},{min:1000,max:2000,price:0.020},{min:2000,max:3000,price:0.030},
+  {min:3000,max:4000,price:0.050},{min:4000,max:5000,price:0.070},{min:5000,max:6000,price:0.080},
+  {min:6000,max:7000,price:0.110},{min:7000,max:8000,price:0.140},{min:8000,max:9000,price:0.170},
+  {min:9000,max:10000,price:0.200},{min:10000,max:11000,price:0.300},{min:11000,max:12000,price:0.350},
+  {min:12000,max:13000,price:0.400},{min:13000,max:14000,price:0.450},{min:14000,max:15000,price:0.500}
+];
+let defaultDiscountConfig = {
+  rank:[{need:99,discount:40},{need:79,discount:30},{need:49,discount:20},{need:29,discount:10}],
+  peak:[{need:899,discount:80},{need:799,discount:70},{need:699,discount:60},{need:599,discount:50},{need:499,discount:40},{need:399,discount:30},{need:299,discount:20},{need:199,discount:10}],
+  power:[{need:9999,discount:90},{need:8999,discount:80},{need:7999,discount:70},{need:6999,discount:60},{need:5999,discount:50},{need:4999,discount:40},{need:3999,discount:30},{need:2999,discount:20},{need:1999,discount:10}]
+};
+
+let rankPriceConfig = JSON.parse(localStorage.getItem("rankPriceConfig")) || defaultRankPriceConfig;
+let peakPriceConfig = JSON.parse(localStorage.getItem("peakPriceConfig")) || defaultPeakPriceConfig;
+let powerPriceConfig = JSON.parse(localStorage.getItem("powerPriceConfig")) || defaultPowerPriceConfig;
+let discountConfig = JSON.parse(localStorage.getItem("discountConfig")) || defaultDiscountConfig;
+
+const curBigRank=document.getElementById("curBigRank"),curSmallRank=document.getElementById("curSmallRank"),curStarSelect=document.getElementById("curStarSelect"),curStarInput=document.getElementById("curStarInput");
+const tarBigRank=document.getElementById("tarBigRank"),tarSmallRank=document.getElementById("tarSmallRank"),tarStarSelect=document.getElementById("tarStarSelect"),tarStarInput=document.getElementById("tarStarInput");
+
+function initRankSelect(){
+  Object.keys(rankData).forEach(b=>{
+    curBigRank.add(new Option(b,b));tarBigRank.add(new Option(b,b));
+  });
+  updateCurSmallRank();updateTarSmallRank();
+}
+
+function updateCurSmallRank(){const b=curBigRank.value;curSmallRank.innerHTML="";rankData[b].small.forEach(s=>curSmallRank.add(new Option(s,s)));curStarSelect.innerHTML="";rankData[b].stars.forEach(s=>curStarSelect.add(new Option(s+"星",s)));const isKing=b==="最强王者";curSmallRank.classList.toggle("hidden",isKing);curStarSelect.classList.toggle("hidden",isKing);curStarInput.classList.toggle("hidden",!isKing);}
+function updateTarSmallRank(){const b=tarBigRank.value;tarSmallRank.innerHTML="";rankData[b].small.forEach(s=>tarSmallRank.add(new Option(s,s)));tarStarSelect.innerHTML="";rankData[b].stars.filter(s=>s>=1).forEach(s=>tarStarSelect.add(new Option(s+"星",s)));const isKing=b==="最强王者";tarSmallRank.classList.toggle("hidden",isKing);tarStarSelect.classList.toggle("hidden",isKing);tarStarInput.classList.toggle("hidden",!isKing);}
+
+let currentType="rank";
+function switchType(type){
+  currentType=type;
+  document.querySelectorAll(".type-btn").forEach(b=>b.classList.remove("active"));
+  document.querySelector(`.type-btn[onclick="switchType('${type}')"]`).classList.add("active");
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  document.getElementById(type+"Panel").classList.add("active");
+  document.getElementById("result").innerHTML="请选择后点击报价";
+}
+
+function getUnitPrice(w,cfg){for(let c of cfg)if(w>=c.start&&w<c.end)return c.price;return 2;}
+function getRankDiscount(needKing, discKey){
+  for(let r of discountConfig[discKey]){if(needKing>=r.need)return{discount:r.discount,desc:`满${r.need}颗星减${r.discount}元`};}
+  return {discount:0,desc:""};
+}
+function getNormalDiscount(need, discKey){
+  let unit=discKey==="peak"?"分":"战力";
+  for(let r of discountConfig[discKey]){if(need>=r.need)return{discount:r.discount,desc:`满${r.need}${unit}减${r.discount}元`};}
+  return {discount:0,desc:""};
+}
+
+function calcRank(curB,curS,curStI,curStS,tarB,tarS,tarStI,tarStS,cfg,discKey){
+  const curStar=curB.value==="最强王者"?~~curStI.value:~~curStS.value;
+  const tarStar=tarB.value==="最强王者"?~~tarStI.value:~~tarStS.value;
+  const cw=rankWeight[curS.value]+curStar,tw=rankWeight[tarS.value]+tarStar;
+  if(tw<=cw)return{valid:false,msg:"目标必须更高"};
+  let total=0;for(let i=cw;i<tw;i++)total+=getUnitPrice(i,cfg);
+  let needKing=Math.max(0,tw-100-Math.max(0,cw-100));
+  let disc=getRankDiscount(needKing,discKey);
+  return{valid:true,curDesc:`${curS.value}${curStar}星`,tarDesc:`${tarS.value}${tarStar}星`,need:tw-cw,original:total,discount:disc.discount,discountDesc:disc.desc,final:Math.max(0,total-disc.discount)};
+}
+function calcPeak(now,tar,cfg,discKey){
+  if(tar<=now)return{valid:false,msg:"目标必须更高"};
+  let total=0;for(let c of cfg){let s=Math.max(now,c.min),e=Math.min(tar,c.max);if(s<e)total+=(e-s)*c.price;}
+  let disc=getNormalDiscount(tar-now,discKey);
+  return{valid:true,curDesc:now,tarDesc:tar,need:tar-now,original:total,discount:disc.discount,discountDesc:disc.desc,final:Math.max(0,total-disc.discount)};
+}
+function calcPower(now,tar,cfg,discKey){return calcPeak(now,tar,cfg,discKey);}
+
+function calculatePrice(){
+  let res;
+  if(currentType==="rank")res=calcRank(curBigRank,curSmallRank,curStarInput,curStarSelect,tarBigRank,tarSmallRank,tarStarInput,tarStarSelect,rankPriceConfig,"rank");
+  else if(currentType==="peak")res=calcPeak(+document.getElementById("peakNow").value,+document.getElementById("peakTar").value,peakPriceConfig,"peak");
+  else if(currentType==="power")res=calcPower(+document.getElementById("powerNow").value,+document.getElementById("powerTar").value,powerPriceConfig,"power");
+  
+  if(!res.valid){document.getElementById("result").innerHTML=res.msg;return;}
+  let final=res.final,extra="";
+  const road=document.querySelector('input[name="extra"][value="road"]').checked;
+  const hero=document.querySelector('input[name="extra"][value="hero"]').checked;
+  if(road)final*=1.2;if(hero)final*=1.3;
+  final=Math.round(final*100)/100;
+  const discTip=res.discount>0?`<br><span class='discount'>满减：${res.discountDesc}</span>`:"";
+  const typeMap={rank:"排位赛",peak:"巅峰赛",power:"荣耀战力"};
+  let suffix=currentType.includes("peak")?"分":currentType.includes("power")?"战力":"";
+  document.getElementById("result").innerHTML=`类型：${typeMap[currentType]}<br>当前：${res.curDesc}${suffix}<br>目标：${res.tarDesc}${suffix}<br>需提升：${res.need}${suffix.replace(/战力|分/,'')}<br>原价：¥${res.original.toFixed(2)}${discTip}${extra}<br><div class="price">报价：¥${final.toFixed(2)}</div>`;
+}
+
+let currentAdminTab="rank";
+function switchAdminTab(tab){
+  currentAdminTab=tab;
+  document.querySelectorAll(".admin-tab-btn").forEach(b=>b.classList.remove("active"));
+  document.querySelector(`.admin-tab-btn[onclick="switchAdminTab('${tab}')"]`).classList.add("active");
+  document.querySelectorAll(".admin-panel").forEach(p=>p.classList.remove("active"));
+  let id="admin"+tab.charAt(0).toUpperCase()+tab.slice(1);
+  document.getElementById(id).classList.add("active");
+}
+
+function renderAdmin(el,cfg){
+  el.innerHTML="";cfg.forEach((c,i)=>{
+    let label=c.name||`${c.min}→${c.max}`;
+    if(el.id.includes("Peak"))label+="（每分）";if(el.id.includes("Power"))label+="（每战力）";
+    el.innerHTML+=`<div class='price-row'><label>${label}</label><input type='number' step='0.001' value='${c.price}' data-i='${i}'></div>`;
+  });
+}
+function renderDiscount(){
+  const el=document.getElementById("adminDiscount");el.innerHTML="";
+  const groups=[{t:"排位赛",k:"rank",u:"星"},{t:"巅峰赛",k:"peak",u:"分"},{t:"荣耀战力",k:"power",u:"战力"}];
+  groups.forEach(g=>{
+    el.innerHTML+=`<div style='color:#fbbf24;font-weight:bold;margin:10px 0 5px'>${g.t}满减</div>`;
+    discountConfig[g.k].forEach((r,i)=>{el.innerHTML+=`<div class='price-row'><label>满${r.need}${g.u}</label><input type='number' value='${r.discount}' data-dk='${g.k}' data-di='${i}'></div>`;});
+  });
+}
+function renderAll(){
+  renderAdmin(document.getElementById("adminRank"),rankPriceConfig);
+  renderAdmin(document.getElementById("adminPeak"),peakPriceConfig);
+  renderAdmin(document.getElementById("adminPower"),powerPriceConfig);
+  renderDiscount();
+}
+
+function saveAllPrices(){
+  document.querySelectorAll("#adminRank input").forEach(i=>rankPriceConfig[+i.dataset.i].price=+i.value);
+  document.querySelectorAll("#adminPeak input").forEach(i=>peakPriceConfig[+i.dataset.i].price=+i.value);
+  document.querySelectorAll("#adminPower input").forEach(i=>powerPriceConfig[+i.dataset.i].price=+i.value);
+  document.querySelectorAll("[data-dk]").forEach(i=>discountConfig[i.dataset.dk][+i.dataset.di].discount=+i.value);
+
+  localStorage.setItem("rankPriceConfig",JSON.stringify(rankPriceConfig));
+  localStorage.setItem("peakPriceConfig",JSON.stringify(peakPriceConfig));
+  localStorage.setItem("powerPriceConfig",JSON.stringify(powerPriceConfig));
+  localStorage.setItem("discountConfig",JSON.stringify(discountConfig));
+  
+  alert("✅ 保存成功！配置永久生效！");
+  closeAdminPanel();
+}
+
+function openAdminPanel(){document.getElementById("adminPanel").classList.add("active");renderAll();}
+function closeAdminPanel(){document.getElementById("adminPanel").classList.remove("active");}
+
+window.onload=initRankSelect;
+</script>
+</body>
+</html>
